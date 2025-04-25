@@ -1,8 +1,10 @@
 # Contact Form API
 
-Flask backend for handling contact form submissions.
+Flask backend for handling contact form submissions with admin panel.
 
-## Setup
+## Quick Start
+
+### Setup
 
 1. Create and activate virtual environment:
 ```bash
@@ -66,3 +68,86 @@ flask run
 ## Database
 
 SQLite database will be created at `app.db` on first run.
+
+## Complete API Documentation
+
+### Authentication
+- Basic Auth: `Authorization: Basic base64(username:password)`
+- Session cookies for admin panel
+- JWT support coming in v2.0
+
+### Error Codes
+- 400: Bad Request (validation failed)
+- 401: Unauthorized
+- 404: Not Found
+- 500: Internal Server Error
+
+### Request/Response Examples
+```json
+// POST /api/contact
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "message": "Hello, I have a question"
+}
+
+// Response
+{
+  "id": 123,
+  "created_at": "2025-04-25T19:15:00Z",
+  "message": "Submitted successfully"
+}
+```
+
+## Advanced Setup
+
+### Configuration
+- Copy `.env.example` to `.env`
+- Set `SECRET_KEY` for production
+- Configure database URI if not using SQLite
+
+### Database Setup
+```bash
+flask db init  # First time only
+flask db migrate -m "initial migration"
+flask db upgrade
+```
+
+
+## Architecture Overview
+
+The application follows a layered architecture with clear separation of concerns:
+
+### Repository Pattern
+- `repository.py` handles all database operations
+- Provides abstraction between database and service layer
+- Implements CRUD operations for all models
+
+### Service Layer
+- `services.py` contains business logic
+- Validates inputs before passing to repository
+- Handles data transformation and error handling
+
+### Use Cases
+1. Contact Form Submission
+   - Validate input → Save to database → Send confirmation
+2. Admin Operations
+   - Authentication → CRUD operations → Audit logging
+
+### Data Flow
+1. Request → Routes → Services → Repository → Database
+2. Response ← Repository ← Services ← Routes
+
+## Testing
+
+```bash
+python -m pytest tests/
+```
+- Coverage report: `pytest --cov=app tests/`
+- With HTML report: `pytest --cov=app --cov-report=html tests/`
+
+## Migration Commands
+- Create new migration: `flask db migrate -m "description of changes"`
+- Apply migrations: `flask db upgrade`
+- Rollback migration: `flask db downgrade`
+- Show migration history: `flask db history`

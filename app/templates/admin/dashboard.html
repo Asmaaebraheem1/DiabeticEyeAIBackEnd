@@ -35,7 +35,7 @@
                         <td>{{ contact.name }}</td>
                         <td>{{ contact.email }}</td>
                         <td>{{ contact.message }}</td>
-                        <td>{{ contact.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ contact.formatted_date }}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary btn-edit me-2"
                                     data-contact-id="{{ contact.id }}"
