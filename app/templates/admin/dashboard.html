@@ -1,0 +1,337 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<header>
+    <h1>Contact Submissions</h1>
+    <a href="{{ url_for('admin.logout') }}" style="color: white;">Logout</a>
+</header>
+
+<div class="container">
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+    
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Message</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contact in contacts %}
+            <tr>
+                <td>{{ contact.id }}</td>
+                <td>{{ contact.name }}</td>
+                <td>{{ contact.email }}</td>
+                <td>{{ contact.message }}</td>
+                <td>{{ contact.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <button class="btn btn-edit"
+                            data-contact-id="{{ contact.id }}"
+                            data-contact-name="{{ contact.name|e }}"
+                            data-contact-email="{{ contact.email|e }}"
+                            data-contact-message="{{ contact.message|e }}">
+                        Edit
+                    </button>
+                    <button class="btn btn-delete" data-contact-id="{{ contact.id }}">Delete</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Delete functionality
+    document.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.contactId;
+            const row = this.closest('tr');
+            
+            if (confirm('Are you sure you want to delete this contact?')) {
+                this.disabled = true;
+                this.textContent = 'Deleting...';
+                
+                fetch('/admin/api/contacts/' + id, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Fade out and remove row
+                        row.style.transition = 'opacity 0.3s';
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 300);
+                    } else {
+                        throw new Error('Failed to delete contact');
+                    }
+                })
+                .catch(error => {
+                    this.disabled = false;
+                    this.textContent = 'Delete';
+                    alert(error.message);
+                });
+            }
+        });
+    });
+        const id = this.dataset.id;
+        if (confirm('Are you sure you want to delete this contact?')) {
+            const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Deleting...';
+        
+                fetch('/admin/api/contacts/' + id, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include'
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error('Failed to delete contact');
+        })
+        .then(data => {
+            // Find and remove the row
+            const row = this.closest('tr');
+            if (row) {
+                row.style.transition = 'opacity 0.3s';
+                row.style.opacity = '0';
+                setTimeout(() => row.remove(), 300);
+            }
+        })
+        .catch(error => {
+            btn.disabled = false;
+            btn.textContent = 'Delete';
+            alert(error.message);
+        });
+    }
+}
+
+    // Edit functionality
+    const editModal = document.createElement('div');
+    editModal.className = 'modal';
+    editModal.innerHTML = `
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Edit Contact</h2>
+            <form id="editForm">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label for="editName">Name</label>
+                    <input type="text" id="editName" required>
+                    <div class="error" id="nameError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input type="email" id="editEmail" required>
+                    <div class="error" id="emailError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="editMessage">Message</label>
+                    <textarea id="editMessage" required></textarea>
+                    <div class="error" id="messageError"></div>
+                </div>
+                <button type="submit" class="btn btn-save">Save Changes</button>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(editModal);
+
+    // Edit button handlers
+    document.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('editId').value = this.dataset.contactId;
+            document.getElementById('editName').value = this.dataset.contactName;
+            document.getElementById('editEmail').value = this.dataset.contactEmail;
+            document.getElementById('editMessage').value = this.dataset.contactMessage;
+            
+            // Clear previous errors
+            document.querySelectorAll('.error').forEach(el => el.textContent = '');
+            
+            editModal.style.display = 'block';
+        });
+    });
+
+    // Close modal handlers
+    editModal.querySelector('.close').addEventListener('click', function() {
+        editModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', function(event) {
+        if (event.target === editModal) {
+            editModal.style.display = 'none';
+        }
+    });
+
+    // Form submission
+    document.getElementById('editForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const id = document.getElementById('editId').value;
+        const name = document.getElementById('editName').value.trim();
+        const email = document.getElementById('editEmail').value.trim();
+        const message = document.getElementById('editMessage').value.trim();
+        
+        // Validation
+        let isValid = true;
+        if (name.length < 2) {
+            document.getElementById('nameError').textContent = 'Name must be at least 2 characters';
+            isValid = false;
+        }
+        if (!email.includes('@') || !email.includes('.')) {
+            document.getElementById('emailError').textContent = 'Please enter a valid email';
+            isValid = false;
+        }
+        if (message.length < 10) {
+            document.getElementById('messageError').textContent = 'Message must be at least 10 characters';
+            isValid = false;
+        }
+        if (!isValid) return;
+        
+        try {
+            const response = await fetch('/admin/api/contacts/' + id, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ name, email, message })
+            });
+            
+            if (response.ok) {
+                location.reload();
+            } else {
+                const data = await response.json();
+                alert(data.error || 'Failed to update contact');
+            }
+        } catch (error) {
+            alert('Error updating contact: ' + error.message);
+        }
+    });
+});
+editModal.className = 'modal';
+editModal.innerHTML = `
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Contact</h2>
+        <form id="editForm">
+            <input type="hidden" id="editId">
+            <div class="form-group">
+                <label for="editName">Name</label>
+                <input type="text" id="editName" required>
+                <div class="error" id="nameError"></div>
+            </div>
+            <div class="form-group">
+                <label for="editEmail">Email</label>
+                <input type="email" id="editEmail" required>
+                <div class="error" id="emailError"></div>
+            </div>
+            <div class="form-group">
+                <label for="editMessage">Message</label>
+                <textarea id="editMessage" required></textarea>
+                <div class="error" id="messageError"></div>
+            </div>
+            <button type="submit" class="btn btn-save">Save Changes</button>
+        </form>
+    </div>
+`;
+document.body.appendChild(editModal);
+
+// Set up event listeners for all edit buttons
+document.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const id = this.dataset.contactId;
+        const name = this.dataset.contactName;
+        const email = this.dataset.contactEmail;
+        const message = this.dataset.contactMessage;
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editMessage').value = message;
+    
+    // Clear previous errors
+    document.querySelectorAll('.error').forEach(el => el.textContent = '');
+    
+    editModal.style.display = 'block';
+}
+
+// Close modal when clicking X
+editModal.querySelector('.close').onclick = () => {
+    editModal.style.display = 'none';
+};
+
+// Close modal when clicking outside
+window.onclick = (event) => {
+    if (event.target === editModal) {
+        editModal.style.display = 'none';
+    }
+};
+
+// Handle form submission
+document.getElementById('editForm').onsubmit = async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('editId').value;
+    const name = document.getElementById('editName').value.trim();
+    const email = document.getElementById('editEmail').value.trim();
+    const message = document.getElementById('editMessage').value.trim();
+    
+    // Simple client-side validation
+    let isValid = true;
+    
+    if (name.length < 2) {
+        document.getElementById('nameError').textContent = 'Name must be at least 2 characters';
+        isValid = false;
+    }
+    
+    if (!email.includes('@') || !email.includes('.')) {
+        document.getElementById('emailError').textContent = 'Please enter a valid email';
+        isValid = false;
+    }
+    
+    if (message.length < 10) {
+        document.getElementById('messageError').textContent = 'Message must be at least 10 characters';
+        isValid = false;
+    }
+    
+    if (!isValid) return;
+    
+    try {
+        const response = await fetch('/admin/api/contacts/' + id, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ name, email, message })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert(data.error || 'Failed to update contact');
+        }
+    } catch (error) {
+        alert('Error updating contact: ' + error.message);
+    }
+};
+</script>
+{% endblock %}
