@@ -31,7 +31,11 @@ def create_app():
         db.create_all()
 
     # Register blueprints
-    from app.routes import bp as main_bp, admin_bp, admin_ui_bp, create_admin
+    from app.main_routes import bp as main_bp
+    from app.admin_routes import admin_bp
+    from app.admin_ui_routes import admin_ui_bp
+    from app.cli import create_admin
+    
     app.register_blueprint(main_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(admin_ui_bp)
