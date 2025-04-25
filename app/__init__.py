@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
+from app.services import ImageAnalysisService
 
 db = SQLAlchemy()
 cors = CORS()
@@ -29,6 +30,9 @@ def create_app():
     # Create tables if not exists
     with app.app_context():
         db.create_all()
+        
+        # Initialize ML model
+        ImageAnalysisService.initialize_model()
 
     # Register blueprints
     from app.main_routes import bp as main_bp

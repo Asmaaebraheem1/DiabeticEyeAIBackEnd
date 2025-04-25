@@ -98,6 +98,48 @@ class UpdateContactUseCase:
     def execute(contact_id: int, contact_data: Dict) -> Dict:
         return ContactService.update_contact(contact_id, contact_data)
 
+class ImageAnalysisService:
+    """Service for image analysis operations"""
+    
+    _model = None
+    _processor = None
+
+    @classmethod
+    def initialize_model(cls):
+        """Initialize model (called during app startup)"""
+        from transformers import AutoImageProcessor, AutoModelForImageClassification
+        import torch
+        cls._processor = AutoImageProcessor.from_pretrained("facebook/dinov2-base")
+        cls._model = AutoModelForImageClassification.from_pretrained("facebook/dinov2-base")
+        cls._model.eval()
+
+    @classmethod
+    def analyze_image(cls, image) -> Dict:
+        """Run prediction on image"""
+        if cls._model is None or cls._processor is None:
+            raise RuntimeError("Image analysis model not initialized")
+            
+        try:
+            import torch
+            inputs = cls._processor(images=image, return_tensors="pt")
+            with torch.no_grad():
+                outputs = cls._model(**inputs)
+            predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
+            predicted_class = predictions.argmax().item()
+            return {
+                'prediction': cls._model.config.id2label[predicted_class],
+                'confidence': float(predictions.max())
+            }
+        except Exception as e:
+            return {'error': str(e)}
+
+class AnalyzeImageUseCase:
+    """Use case for analyzing images"""
+    
+    @staticmethod
+    def execute(image) -> Dict:
+        return ImageAnalysisService.analyze_image(image)
+
 class DeleteContactUseCase:
     """Use case for deleting contacts"""
     
