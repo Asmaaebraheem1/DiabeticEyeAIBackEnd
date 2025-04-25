@@ -17,7 +17,7 @@ class AdminCRUD {
         
         if (confirm('Are you sure you want to delete this contact?')) {
             btn.disabled = true;
-            btn.textContent = 'Deleting...';
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
             
             fetch('/admin/api/contacts/' + id, {
                 method: 'DELETE',
@@ -29,8 +29,7 @@ class AdminCRUD {
             })
             .then(response => {
                 if (response.ok) {
-                    row.style.transition = 'opacity 0.3s';
-                    row.style.opacity = '0';
+                    row.classList.add('table-danger');
                     setTimeout(() => row.remove(), 300);
                 } else {
                     throw new Error('Failed to delete contact');
@@ -38,54 +37,20 @@ class AdminCRUD {
             })
             .catch(error => {
                 btn.disabled = false;
-                btn.textContent = 'Delete';
+                btn.innerHTML = '<i class="bi bi-trash"></i> Delete';
                 alert(error.message);
             });
         }
     }
 
     setupEditModal() {
-        this.editModal = document.createElement('div');
-        this.editModal.className = 'modal';
-        this.editModal.innerHTML = `
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2>Edit Contact</h2>
-                <form id="editForm">
-                    <input type="hidden" id="editId">
-                    <div class="form-group">
-                        <label for="editName">Name</label>
-                        <input type="text" id="editName" required>
-                        <div class="error" id="nameError"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="editEmail">Email</label>
-                        <input type="email" id="editEmail" required>
-                        <div class="error" id="emailError"></div>
-                    </div>
-                    <div class="form-group">
-                        <label for="editMessage">Message</label>
-                        <textarea id="editMessage" required></textarea>
-                        <div class="error" id="messageError"></div>
-                    </div>
-                    <button type="submit" class="btn btn-save">Save Changes</button>
-                </form>
-            </div>
-        `;
-        document.body.appendChild(this.editModal);
+        // Create Bootstrap modal template
+        this.editModal = new bootstrap.Modal(document.getElementById('editModal'), {
+            keyboard: false
+        });
 
         document.querySelectorAll('.btn-edit').forEach(btn => {
             btn.addEventListener('click', (e) => this.showEditModal(e));
-        });
-
-        this.editModal.querySelector('.close').addEventListener('click', () => {
-            this.editModal.style.display = 'none';
-        });
-
-        window.addEventListener('click', (e) => {
-            if (e.target === this.editModal) {
-                this.editModal.style.display = 'none';
-            }
         });
 
         document.getElementById('editForm').addEventListener('submit', (e) => this.handleEditSubmit(e));
@@ -98,8 +63,11 @@ class AdminCRUD {
         document.getElementById('editEmail').value = btn.dataset.contactEmail;
         document.getElementById('editMessage').value = btn.dataset.contactMessage;
         
-        document.querySelectorAll('.error').forEach(el => el.textContent = '');
-        this.editModal.style.display = 'block';
+        // Clear previous errors
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        this.editModal.show();
     }
 
     handleEditSubmit(e) {
@@ -111,6 +79,10 @@ class AdminCRUD {
         const message = document.getElementById('editMessage').value.trim();
         
         if (!this.validateForm(name, email, message)) return;
+        
+        const saveBtn = document.getElementById('saveBtn');
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...';
         
         fetch('/admin/api/contacts/' + id, {
             method: 'PUT',
@@ -131,6 +103,8 @@ class AdminCRUD {
             }
         })
         .catch(error => {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = 'Save Changes';
             alert(error.message);
         });
     }
@@ -140,16 +114,19 @@ class AdminCRUD {
         
         if (name.length < 2) {
             document.getElementById('nameError').textContent = 'Name must be at least 2 characters';
+            document.getElementById('editName').classList.add('is-invalid');
             isValid = false;
         }
         
         if (!email.includes('@') || !email.includes('.')) {
             document.getElementById('emailError').textContent = 'Please enter a valid email';
+            document.getElementById('editEmail').classList.add('is-invalid');
             isValid = false;
         }
         
         if (message.length < 10) {
             document.getElementById('messageError').textContent = 'Message must be at least 10 characters';
+            document.getElementById('editMessage').classList.add('is-invalid');
             isValid = false;
         }
         
@@ -157,7 +134,54 @@ class AdminCRUD {
     }
 }
 
+// Add modal template to the page
+const modalTemplate = `
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editModalLabel">Edit Contact</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editId">
+                    <div class="mb-3">
+                        <label for="editName" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="editName" required>
+                        <div class="invalid-feedback" id="nameError"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail" required>
+                        <div class="invalid-feedback" id="emailError"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editMessage" class="form-label">Message</label>
+                        <textarea class="form-control" id="editMessage" rows="3" required></textarea>
+                        <div class="invalid-feedback" id="messageError"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="submit" form="editForm" class="btn btn-primary" id="saveBtn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>`;
+
+document.body.insertAdjacentHTML('beforeend', modalTemplate);
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    new AdminCRUD();
+    // Load Bootstrap JS if not already loaded
+    if (typeof bootstrap === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js';
+        script.onload = () => new AdminCRUD();
+        document.head.appendChild(script);
+    } else {
+        new AdminCRUD();
+    }
 });
