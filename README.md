@@ -1,6 +1,13 @@
-# Contact Form API
+# Retinal Image Analysis API
 
-Flask backend for handling contact form submissions with admin panel.
+Flask backend for retinal image analysis and contact form management with admin panel.
+
+Features:
+- Analyze retinal images (JPG/PNG)
+- Process PDF documents (extract first page)
+- Handle image URLs
+- Contact form submission system
+- Admin dashboard for managing submissions
 
 ## Quick Start
 
@@ -32,6 +39,23 @@ flask run
 ## API Endpoints
 
 ### Public Endpoints
+
+**POST /api/analyze**
+- Accepts:
+  - Image file (JPG/PNG)
+  - PDF file (first page will be analyzed)
+  - Image URL
+- Returns:
+  ```json
+  {
+    "prediction": "string",
+    "confidence": 0.95,
+    "extracted_image": "filename.jpg" // only for PDFs
+  }
+  ```
+- Errors:
+  - 400: Invalid file/URL
+  - 500: Analysis failed
 
 **POST /api/contact**
 - Accepts JSON: `{"name": "string", "email": "string", "message": "string"}`
@@ -129,7 +153,9 @@ The application follows a layered architecture with clear separation of concerns
 - Handles data transformation and error handling
 
 ### Use Cases
-1. Contact Form Submission
+1. Image Analysis
+   - File/URL validation → Image processing → Model prediction → Results formatting
+2. Contact Form Submission
    - Validate input → Save to database → Send confirmation
 2. Admin Operations
    - Authentication → CRUD operations → Audit logging
