@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict
 from datetime import datetime
-from app import db
+from app.extensions import db
 from app.models import Contact
 
 class ContactRepository:

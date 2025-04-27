@@ -1,13 +1,7 @@
 # Flask application factory
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_cors import CORS
-from flask_migrate import Migrate
+from app.extensions import db, cors, migrate
 from app.services import ImageAnalysisService
-
-db = SQLAlchemy()
-cors = CORS()
-migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
@@ -33,6 +27,9 @@ def create_app():
         
         # Initialize ML model
         ImageAnalysisService.initialize_model()
+        
+        # Import models after db initialization to avoid circular imports
+        from app import models
 
     # Register blueprints
     from app.main_routes import bp as main_bp
