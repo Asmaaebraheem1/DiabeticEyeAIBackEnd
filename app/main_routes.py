@@ -1,5 +1,7 @@
 from app.services import CreateContactUseCase
 from flask.cli import with_appcontext
+from flask import send_file
+import os
 import click
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from functools import wraps
@@ -41,6 +43,28 @@ def analyze():
                 if not images:
                     return jsonify({'error': 'Could not extract images from PDF'}), 400
                 image = images[0]
+                # Save extracted image to temp file
+                import tempfile
+                temp_dir = os.path.join(bp.root_path, 'temp_images')
+                os.makedirs(temp_dir, exist_ok=True)
+                temp_img = tempfile.NamedTemporaryFile(
+                    suffix='.jpg',
+                    dir=temp_dir,
+                    delete=False
+                )
+                image.save(temp_img.name, 'JPEG')
+                temp_img.close()
+                
+                # Analyze the extracted image
+                result = AnalyzeImageUseCase.execute(image)
+                if 'error' in result:
+                    return jsonify(result), 500
+                
+                return jsonify({
+                    'prediction': result['prediction'],
+                    'confidence': result['confidence'],
+                    'extracted_image': os.path.basename(temp_img.name)
+                })
             else:
                 image = Image.open(file.stream)
         except Exception as e:
@@ -63,3 +87,12 @@ def analyze():
         return jsonify(result), 500
     
     return jsonify(result), 200
+
+@bp.route('/temp_images/<path:filename>')
+def serve_temp_image(filename):
+    """Serve temporary extracted images"""
+    temp_dir = os.path.join(bp.root_path, 'temp_images')
+    image_path = os.path.join(temp_dir, filename)
+    if not os.path.exists(image_path):
+        return jsonify({'error': 'Image not found'}), 404
+    return send_file(image_path, mimetype='image/jpeg')
