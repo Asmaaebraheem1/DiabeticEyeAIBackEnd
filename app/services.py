@@ -109,8 +109,8 @@ class ImageAnalysisService:
         """Initialize model (called during app startup)"""
         from transformers import AutoImageProcessor, AutoModelForImageClassification
         import torch
-        cls._processor = AutoImageProcessor.from_pretrained("facebook/dinov2-base")
-        cls._model = AutoModelForImageClassification.from_pretrained("facebook/dinov2-base")
+        cls._processor = AutoImageProcessor.from_pretrained("AsmaaElnagger/Diabetic_RetinoPathy_detection")
+        cls._model = AutoModelForImageClassification.from_pretrained("AsmaaElnagger/Diabetic_RetinoPathy_detection")
         cls._model.eval()
 
     @classmethod
