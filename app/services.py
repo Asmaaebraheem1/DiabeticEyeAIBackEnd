@@ -127,7 +127,7 @@ class ImageAnalysisService:
             predictions = torch.nn.functional.softmax(outputs.logits, dim=-1)
             predicted_class = predictions.argmax().item()
             return {
-                'prediction': cls._model.config.id2label[predicted_class],
+                'prediction': "stage " + cls._model.config.id2label[predicted_class],
                 'confidence': float(predictions.max())
             }
         except Exception as e:
